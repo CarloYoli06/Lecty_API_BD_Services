@@ -5,6 +5,18 @@ const { safeAsk } = require('./geminiWrapper');
 const User = require('../models/User');
 const Session = require('../models/Session');
 
+// Guarda el mensaje en la sesión
+async function saveMessage(session, contenido, emisor = 'ia', emocion = null) {
+  session.MENSAJES.push({
+    IDM: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    CONTENIDO: contenido,
+    EMISOR: emisor,
+    FECHA_HORA: new Date(),
+    EMOCION: emocion || session.EMOCION
+  });
+  await session.save();
+}
+
 module.exports = {
   handleUserMessage: async ({ userId, sessionId, message }) => {
     const [user, session] = await Promise.all([
@@ -14,28 +26,26 @@ module.exports = {
 
     if (!user || !session) throw new Error('Usuario o sesión no encontrada');
 
-    // Add message to session
-    session.MENSAJES.push({
-      CONTENIDO: message,
-      EMISOR: 'usuario',
-      PARAMETROS: session.PARAMETROS_ACTUALES
-    });
+    // Guardar mensaje del usuario
+    await saveMessage(session, message, 'usuario');
 
-    // Update parameters based on message
+    // Actualizar parámetros de la sesión según el mensaje
     await stateService.updateSessionParameters(session, message);
 
-    // Handle stage transitions
+    // Flujo de etapas
     switch (session.ETAPA_ACTUAL) {
       case 'saludo':
-        return await this._handleGreeting(user, session);
+        return await module.exports._handleGreeting(user, session);
       case 'diagnostico':
-        return await this._handleDiagnostic(user, session, message);
-      case 'conversacion':
-        return await this._handleConversation(user, session, message);
+        return await module.exports._handleDiagnostic(user, session, message);
+      case 'exploracion':
+        return await module.exports._handleExploration(user, session, message);
+      case 'actividad':
+        return await module.exports._handleActivity(user, session, message);
       case 'cierre':
-        return await this._handleClosing(user, session, message);
+        return await module.exports._handleClosing(user, session, message);
       default:
-        return "¡Vaya! Algo salió mal. ¿Podrías intentarlo de nuevo?";
+        return "¡Ups! No entendí en qué parte de la conversación estamos. ¿Puedes intentarlo de nuevo?";
     }
   },
 
@@ -126,54 +136,38 @@ module.exports = {
     return transitionMessage;
   },
 
-  _handleConversation: async (user, session, message) => {
-    // Check if we should end session
-    if (stateService.shouldEndSession(session)) {
-      await stateService.updateStage(session, 'cierre');
-      return this._handleClosing(user, session, message);
-    }
-
-    // Get appropriate activity based on parameters
-    const activityPrompt = activityService.getActivityPrompt(session);
-    const context = await activityService.getSessionContext(user.US_ID, session.LIBRO_ACTUAL);
-    
-    const fullPrompt = `Eres un asistente de lectura para niños. Usuario: ${user.NOMBRE} (${user.EDAD} años). 
-      Libro actual: "${session.LIBRO_ACTUAL}" (${session.PROGRESO_LIBRO}% leído).
-      Estado actual: Comprensión ${session.PARAMETROS_ACTUALES.comprension}, 
-      Emoción ${session.PARAMETROS_ACTUALES.emocion}, 
-      Motivación ${session.PARAMETROS_ACTUALES.motivacion}.
-      ${context}
-      Actividad sugerida: ${activityPrompt}
-      Último mensaje del usuario: "${message}"
-      Respuesta (1-2 oraciones, tono amigable):`;
-    
-    const response = await safeAsk(fullPrompt);
+  _handleExploration: async (user, session, message) => {
+    // Lógica para manejar la etapa de exploración
+    // Podría involucrar hacer preguntas al usuario sobre sus intereses, etc.
+    const explorationPrompt = `El usuario está en la etapa de exploración. Dile algo como "¡Genial! Explorar nuevos libros es divertido. ¿Tienes algún tema o género en mente?"`;
+    const explorationMessage = await safeAsk(explorationPrompt);
     
     session.MENSAJES.push({
-      CONTENIDO: response,
+      CONTENIDO: explorationMessage,
       EMISOR: 'sistema',
       PARAMETROS: session.PARAMETROS_ACTUALES
     });
     
-    // Update progress if mentioned
-    if (message.includes('capítulo') || message.includes('página') || message.includes('avancé')) {
-      const progressPrompt = `El usuario dijo: "${message}" sobre "${session.LIBRO_ACTUAL}". 
-        Estima el nuevo porcentaje de avance (0-100). Responde SOLO con el número.`;
-      const progressResponse = await safeAsk(progressPrompt);
-      const newProgress = parseInt(progressResponse) || session.PROGRESO_LIBRO;
-      
-      if (newProgress !== session.PROGRESO_LIBRO) {
-        session.HISTORIAL_AVANCE.push({
-          libro: session.LIBRO_ACTUAL,
-          avanceAnterior: session.PROGRESO_LIBRO,
-          avanceActual: newProgress
-        });
-        session.PROGRESO_LIBRO = newProgress;
-      }
-    }
-    
+    await stateService.updateStage(session, 'actividad');
     await session.save();
-    return response;
+    return explorationMessage;
+  },
+
+  _handleActivity: async (user, session, message) => {
+    // Lógica para manejar la etapa de actividad
+    // Podría involucrar sugerir actividades relacionadas con la lectura, como juegos de palabras, preguntas sobre el libro, etc.
+    const activityPrompt = `El usuario está en la etapa de actividad. Sugiere una actividad divertida y educativa relacionada con la lectura.`;
+    const activityMessage = await safeAsk(activityPrompt);
+    
+    session.MENSAJES.push({
+      CONTENIDO: activityMessage,
+      EMISOR: 'sistema',
+      PARAMETROS: session.PARAMETROS_ACTUALES
+    });
+    
+    await stateService.updateStage(session, 'cierre');
+    await session.save();
+    return activityMessage;
   },
 
   _handleClosing: async (user, session, message) => {
