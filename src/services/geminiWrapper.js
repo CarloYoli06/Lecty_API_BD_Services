@@ -9,14 +9,5 @@ module.exports = {
       console.error("Error en Gemini:", error);
       return fallback;
     }
-  },
-
-  validateResponse: async (prompt) => {
-    try {
-      const response = await this.safeAsk(prompt, 'NO');
-      return response.trim().toUpperCase();
-    } catch (error) {
-      return 'NO';
-    }
   }
 };

@@ -1,57 +1,56 @@
+// Session.js
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
   IDM: String,
   CONTENIDO: String,
   EMISOR: String,
-  FECHA_HORA: Date,
-  EMOCION: String
+  FECHA_HORA: { type: Date, default: Date.now },
+  EMOCION: String,
+  PARAMETROS: {
+    comprension: String,
+    emocion: String,
+    motivacion: String
+  }
 });
 
 const sessionSchema = new mongoose.Schema({
   US_ID: { type: String, required: true },
   SESSION_ID: { type: String, required: true, unique: true },
-  ESTADO_ANIMO: String,
   LIBRO_ACTUAL: String,
   PROGRESO_LIBRO: Number,
-  EMOCION_GENERAL: String,
-  FECHA_INICIO: Date,
-  FINALIZADA: Boolean,
+  FECHA_INICIO: { type: Date, default: Date.now },
+  FINALIZADA: { type: Boolean, default: false },
   MENSAJES: [messageSchema],
-  ETAPA_ACTUAL: { type: String, default: 'saludo' }, // NUEVO: etapa de la sesión
-  OBJETIVO_SESION: String,// NUEVO: objetivo/meta de la sesión
+  ETAPA_ACTUAL: { 
+    type: String, 
+    enum: ['saludo', 'diagnostico', 'conversacion', 'cierre'],
+    default: 'saludo'
+  },
   
- HISTORIAL_AVANCE: [
-    {
-      libro: String,
-      avanceAnterior: Number,
-      avanceActual: Number,
-      fecha: Date,
-      resumen: String // Nuevo campo para resumen de avance
-    }
-  ],
+  // Parameters tracking
+  PARAMETROS_ACTUALES: {
+    comprension: { type: String, enum: ['alta', 'media', 'baja'], default: 'media' },
+    emocion: { type: String, enum: ['alta', 'media', 'baja'], default: 'media' },
+    motivacion: { type: String, enum: ['alta', 'media', 'baja'], default: 'media' }
+  },
   
-  HISTORIAL_PARAMETROS: [  // Nuevo campo para historial de parámetros
-    {
-      fecha: Date,
-      comprension: String,
-      emocion: String,
-      motivacion: String
-    }
-  ],
+  HISTORIAL_PARAMETROS: [{
+    fecha: { type: Date, default: Date.now },
+    comprension: String,
+    emocion: String,
+    motivacion: String
+  }],
   
-  ULTIMAS_ACTIVIDADES: [  // Nuevo campo para historial de actividades
-    {
-      fecha: Date,
-      tipo: String,
-      parametro: String,
-      respuestaUsuario: String
-    }
-  ],
-  COMPRENSION: { type: String, default: 'media' },
-  EMOCION: { type: String, default: 'media' },
-  MOTIVACION: { type: String, default: 'media' }
+  HISTORIAL_AVANCE: [{
+    libro: String,
+    avanceAnterior: Number,
+    avanceActual: Number,
+    fecha: { type: Date, default: Date.now }
+  }],
+  
+  RESUMEN_SESION: String,
+  ULTIMA_ACTIVIDAD: String
 });
-
 
 module.exports = mongoose.model('Session', sessionSchema);
