@@ -121,7 +121,7 @@ module.exports = {
 
     // If all diagnostic info is collected, move to conversation
     await stateService.updateStage(session, 'conversacion');
-    const context = await activityService.getSessionContext(user.US_ID, session.LIBRO_ACTUAL);
+    const context = await activityService.getProgressContext(user.US_ID, session.LIBRO_ACTUAL);
     
     const transitionPrompt = `Genera un mensaje de transición a la conversación sobre "${session.LIBRO_ACTUAL}" ` +
                             `(${session.PROGRESO_LIBRO}% leído). ${context}`;
