@@ -93,29 +93,30 @@ module.exports = {
 
     const missingFields = await stateService.getMissingFields(user, session);
     
-    if (missingFields.length > 0) {
+ if (missingFields.length > 0) {
       const field = missingFields[0];
-      let question;
       
-      if (field === 'EDAD') {
-        question = "¡Hola! Para recomendarte libros geniales, dime ¿cuántos años tienes?";
-      } else if (field === 'NOMBRE') {
-        question = "¡Qué gusto leer contigo! ¿Cómo te llamas?";
-      } else if (field === 'LIBRO_ACTUAL') {
-        question = "¿Qué libro estás leyendo ahora? Puedes decirme el título o contarme de qué trata.";
-      } else if (field === 'PROGRESO_LIBRO') {
-        question = `¿Por qué parte vas en "${session.LIBRO_ACTUAL}"? (Ejemplo: "voy por el capítulo donde...")`;
-      }
+      // GENERACIÓN DINÁMICA DE PREGUNTAS CON CONTEXTO
+      const context = session.MENSAJES.slice(-3).map(m => m.CONTENIDO).join(' | ');
       
-      if (question) {
-        session.MENSAJES.push({
-          CONTENIDO: question,
-          EMISOR: 'sistema',
-          PARAMETROS: session.PARAMETROS_ACTUALES
-        });
-        await session.save();
-        return question;
-      }
+      const promptMap = {
+        EDAD: `Niño de edad desconocida. Conversación reciente: "${context}". Pregunta su edad de forma natural y amigable.`,
+        NOMBRE: `Conversación reciente: "${context}". Pregunta su nombre de forma cálida.`,
+        LIBRO_ACTUAL: `Conversación reciente: "${context}". Pregunta qué libro está leyendo de forma natural.`,
+        PROGRESO_LIBRO: `El usuario lee "${session.LIBRO_ACTUAL}". Conversación reciente: "${context}". Pregunta por dónde va en el libro de forma natural.`
+      };
+
+      const question = await safeAsk(promptMap[field]);
+      
+      session.MENSAJES.push({
+        CONTENIDO: question,
+        EMISOR: 'sistema',
+        PARAMETROS: session.PARAMETROS_ACTUALES
+      });
+      
+      await session.save();
+      return question;
+    
     }
 
     // If all diagnostic info is collected, move to conversation

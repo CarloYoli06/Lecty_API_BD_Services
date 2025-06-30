@@ -14,7 +14,7 @@ const processUserMessage = async (messageContent, userId) => {
 };
 
 const updateUserEmotionalState = async (userId, emotionData) => {
-  // Aquí se puede implementar la lógica para actualizar el estado emocional del usuario en la base de datos
+  // implementar la lógica para actualizar el estado emocional del usuario en la base de datos
 };
 
 const analyzeAndUpdateUserProfile = async (messageContent, userId) => {
