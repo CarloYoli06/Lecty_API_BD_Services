@@ -51,25 +51,14 @@ exports.addMessageToConversation = async (req, res) => {
     await session.save();
 
     // Orquestar el flujo conversacional
-    const agentResponse = await sessionManagerService.handleUserMessage({
+     const agentResponse = await sessionManagerService.handleUserMessage({
       userId,
       sessionId,
       message: content,
       emotion
     });
 
-    // Guardar respuesta del agente
-    const agentMessage = {
-      IDM: uuidv4(),
-      CONTENIDO: agentResponse,
-      EMISOR: 'agente',
-      FECHA_HORA: new Date()
-    };
-    session.MENSAJES.push(agentMessage);
-    console.log('addMessageToConversation - respuesta agente:', agentMessage); // LOG
-    await session.save();
-
-    res.status(201).json({ userMessage: newMessage, agentMessage });
+    res.status(201).json({ userMessage: newMessage, agentResponse });
   } catch (error) {
     console.error('Error en addMessageToConversation:', error); // LOG
     res.status(500).json({ message: error.message, stack: error.stack });

@@ -24,14 +24,14 @@ const sessionSchema = new mongoose.Schema({
   MENSAJES: [messageSchema],
   ETAPA_ACTUAL: { 
     type: String, 
-    enum: ['saludo', 'diagnostico', 'conversacion', 'cierre'],
+    enum: ['saludo', 'diagnostico', 'exploracion', 'actividad', 'cierre'],
     default: 'saludo'
   },
   
   // Parameters tracking
   PARAMETROS_ACTUALES: {
     comprension: { type: String, enum: ['alta', 'media', 'baja'], default: 'media' },
-    emocion: { type: String, enum: ['alta', 'media', 'baja'], default: 'media' },
+    emocion: { type: String, enum: ['positiva', 'neutra', 'negativa'], default: 'neutra' },
     motivacion: { type: String, enum: ['alta', 'media', 'baja'], default: 'media' }
   },
   
