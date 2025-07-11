@@ -3,20 +3,12 @@ const { safeAsk } = require('./geminiWrapper');
 
 module.exports = {
   validateField: async ({ campo, mensaje, user, session }) => {
-    if (campo !== 'LIBRO_ACTUAL') {
-      // ... validación existente para otros campos
-    }
-
-    // Validación especial para libros
-    const prompt = `
-      El niño (${user.EDAD} años) dijo: "${mensaje}". 
-      ¿Es una descripción válida de un libro o título reconocible? 
-      Responde SOLO con el título del libro si es identificable, o "NO" si no.
-    `;
+      if (campo === 'LIBRO_ACTUAL') {
+    const prompt = `Analiza: "${mensaje}". ¿Contiene claramente el título de un libro infantil conocido? 
+      Responde SOLO con el título exacto entre comillas o "NO".`;
     
-    const libroIdentificado = await safeAsk(prompt);
-    return libroIdentificado.includes("NO") 
-      ? "NO" 
-      : `SI:${libroIdentificado.trim()}`;
+    const respuesta = await safeAsk(prompt);
+    return respuesta.includes('"') ? `SI:${respuesta.replace(/"/g, '')}` : "NO";
+  }
   }
 }

@@ -1,6 +1,7 @@
 // activityService.js
 const stateService = require('./stateService');
 const { safeAsk } = require('./geminiWrapper');
+const User = require('../models/User');
 
 const ACTIVIDADES = {
   // Actividades para mejorar la emoción
@@ -83,7 +84,7 @@ async function selectBestActivity(session, user, activityType) {
     - Estado emocional: ${session.PARAMETROS_ACTUALES.emocion}
     - Nivel de motivación: ${session.PARAMETROS_ACTUALES.motivacion}
     - Nivel de comprensión: ${session.PARAMETROS_ACTUALES.comprension}
-    
+    mantyen la  conversacion coherente y breve pero amigable, 
     Últimos mensajes:
     ${session.MENSAJES.slice(-3).map(m => `${m.EMISOR}: ${m.CONTENIDO}`).join('\n')}
   `;

@@ -14,72 +14,167 @@ module.exports = {
     return missing;
   },
 
-  shouldTransitionToNextStage: (session) => {
-    const messageCount = session.MENSAJES.length;
-    const params = session.PARAMETROS_ACTUALES;
-    
-    // Condiciones por etapa
-    switch (session.ETAPA_ACTUAL) {
-      case 'exploracion':
-        // Transicionar a actividad después de 5-7 mensajes con buena interacción
-        return messageCount >= 5 && 
-               params.motivacion !== 'baja' && 
-               params.emocion !== 'negativa';
-               
-      case 'actividad':
-        // Transicionar a cierre si la actividad fue exitosa
-        const ultimosParams = session.HISTORIAL_PARAMETROS.slice(-2);
-        const mejoraEmocional = ultimosParams.every(p => 
-          p.emocion === 'positiva' || p.motivacion === 'alta'
-        );
-        return mejoraEmocional || messageCount > 15;
-        
-      case 'cierre':
-        return true; // Siempre cerrar cuando se llega a esta etapa
-        
-      default:
-        return false;
+  analyzeSessionIntent: async (message, currentStage) => {
+    const prompt = `
+      Analiza el siguiente mensaje: "${message}"
+      
+      Determina la intención del usuario respecto a la sesión actual.
+      Considera el contexto de que estamos en la etapa: ${currentStage}
+      
+      Responde en formato JSON con estos campos:
+      {
+        "quiereContinuar": true/false (si muestra interés en seguir conversando),
+        "quiereTerminar": true/false (si indica que debe irse o quiere terminar),
+        "listoParaSiguienteEtapa": true/false (si ha cumplido el objetivo de la etapa actual),
+        "razon": "breve explicación de la decisión"
+      }
+    `;
+
+    try {
+      const response = await safeAsk(prompt);
+      const cleanResponse = response.replace(/```json|```/g, '').trim();
+      return JSON.parse(cleanResponse);
+    } catch (error) {
+      console.error('Error analyzing session intent:', error);
+      return {
+        quiereContinuar: true,
+        quiereTerminar: false,
+        listoParaSiguienteEtapa: false,
+        razon: "Error en análisis, mantener estado actual"
+      };
     }
   },
 
-  updateStage: async (session, nextStage) => {
+  shouldTransitionToNextStage: async (session, message) => {
+    const currentStage = session.ETAPA_ACTUAL;
+    const messageCount = session.MENSAJES.length;
+    const params = session.PARAMETROS_ACTUALES;
+
+    // Analizar intención del usuario
+    const intent = await module.exports.analyzeSessionIntent(message, currentStage);
+    
+    // Si el usuario quiere terminar, ir a cierre
+    if (intent.quiereTerminar) {
+      return {
+        shouldTransition: true,
+        nextStage: 'cierre',
+        reason: intent.razon
+      };
+    }
+
+    // Reglas específicas por etapa
+    switch (currentStage) {
+      case 'saludo':
+        // Pasar a diagnóstico después del primer intercambio
+        return {
+          shouldTransition: true,
+          nextStage: 'diagnostico',
+          reason: 'Saludo completado'
+        };
+
+      case 'diagnostico':
+        // Verificar si tenemos toda la información necesaria
+        const missingFields = await module.exports.getMissingFields(
+          await User.findOne({ US_ID: session.US_ID }), 
+          session
+        );
+        return {
+          shouldTransition: missingFields.length === 0,
+          nextStage: 'exploracion',
+          reason: missingFields.length === 0 ? 
+            'Información completa' : 
+            `Faltan campos: ${missingFields.join(', ')}`
+        };
+
+      case 'exploracion':
+        // Transicionar basado en comprensión y mensajes
+        const altaComprension = params.comprension === 'alta';
+        const suficientesMensajes = messageCount >= (altaComprension ? 5 : 8);
+        
+        return {
+          shouldTransition: suficientesMensajes || intent.listoParaSiguienteEtapa,
+          nextStage: 'actividad',
+          reason: suficientesMensajes ? 
+            'Suficientes mensajes de exploración' : 
+            intent.razon
+        };
+
+      case 'actividad':
+        // Evaluar si la actividad fue exitosa
+        const actividadExitosa = params.motivacion === 'alta' || 
+                                params.emocion === 'positiva';
+        
+        return {
+          shouldTransition: actividadExitosa || messageCount > 15,
+          nextStage: intent.quiereContinuar ? 'exploracion' : 'cierre',
+          reason: actividadExitosa ? 
+            'Actividad completada exitosamente' : 
+            'Límite de mensajes alcanzado'
+        };
+
+      case 'cierre':
+        return {
+          shouldTransition: false,
+          nextStage: null,
+          reason: 'Etapa final'
+        };
+
+      default:
+        return {
+          shouldTransition: false,
+          nextStage: null,
+          reason: 'Etapa no reconocida'
+        };
+    }
+  },
+
+  updateStage: async (session, nextStage, message) => {
     // Validar transiciones permitidas
     const validTransitions = {
       saludo: ['diagnostico'],
-      diagnostico: ['exploracion'],
+      diagnostico: ['exploracion', 'cierre'],
       exploracion: ['actividad', 'cierre'],
       actividad: ['exploracion', 'cierre'],
       cierre: []
     };
     
-    // Verificar si es momento de transicionar
-    if (nextStage !== 'cierre' && !module.exports.shouldTransitionToNextStage(session)) {
+    // Verificar si debemos transicionar
+    const transitionResult = await module.exports.shouldTransitionToNextStage(session, message);
+    
+    // Si no debemos transicionar o la transición no es válida, mantener estado actual
+    if (!transitionResult.shouldTransition || 
+        !validTransitions[session.ETAPA_ACTUAL].includes(transitionResult.nextStage)) {
+      console.log(`Manteniendo etapa ${session.ETAPA_ACTUAL}: ${transitionResult.reason}`);
       return false;
     }
     
-    if (validTransitions[session.ETAPA_ACTUAL].includes(nextStage)) {
-      const previousStage = session.ETAPA_ACTUAL;
-      session.ETAPA_ACTUAL = nextStage;
-      
-      // Actualizar objetivo según la etapa
-      session.OBJETIVO_SESION = {
-        saludo: 'Establecer conexión inicial con el usuario',
-        diagnostico: 'Recopilar información necesaria sobre el usuario y su lectura',
-        exploracion: 'Profundizar en la comprensión y disfrute del libro',
-        actividad: 'Reforzar el aprendizaje y la motivación mediante actividades',
-        cierre: 'Concluir la sesión de manera positiva y motivadora'
-      }[nextStage];
-      
-      await session.save();
-      return true;
-    }
+    // Usar la etapa sugerida por shouldTransitionToNextStage si no se especificó una
+    const newStage = nextStage || transitionResult.nextStage;
     
-    console.warn(`Transición inválida de ${session.ETAPA_ACTUAL} a ${nextStage}`);
-    return false;
+    // Actualizar la etapa y el objetivo
+    const previousStage = session.ETAPA_ACTUAL;
+    session.ETAPA_ACTUAL = newStage;
+    
+    // Actualizar objetivo según la etapa
+    session.OBJETIVO_SESION = {
+      saludo: 'Establecer conexión inicial con el usuario',
+      diagnostico: 'Recopilar información necesaria sobre el usuario y su lectura',
+      exploracion: 'Profundizar en la comprensión y disfrute del libro',
+      actividad: 'Reforzar el aprendizaje y la motivación mediante actividades',
+      cierre: 'Concluir la sesión de manera positiva y motivadora'
+    }[newStage];
+    
+    // Registrar la transición
+    console.log(`Transición de ${previousStage} a ${newStage}: ${transitionResult.reason}`);
+    
+    await session.save();
+    return true;
   },
 
   analyzeMessage: async (message) => {
-    const prompt = `Analiza el mensaje: "${message}". Determina:
+    const prompt = `Analiza el mensaje: "${message}". 
+    Determina SOLO si hay señales claras en el texto. Si el mensaje es breve, ambiguo o no expresa emociones (por ejemplo: "hola", "ok", "sí"), responde "media" o "neutra" según corresponda.
+No asumas emociones negativas o motivación baja a menos que el mensaje lo indique explícitamente (por ejemplo: "estoy triste", "no quiero leer", "me aburro").:
     1. Comprensión (alta/media/baja) - ¿Entiende bien el contenido?
     2. Emoción (positiva/neutra/negativa) - ¿Cómo se siente?
     3. Motivación (alta/media/baja) - ¿Está interesado en continuar?

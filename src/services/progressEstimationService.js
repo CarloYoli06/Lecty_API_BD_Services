@@ -1,9 +1,9 @@
 const { safeAsk } = require('./geminiWrapper');
 
 exports.estimateProgress = async ({ libro, descripcion }) => {
-  const prompt = `El usuario está leyendo "${libro}" y dijo: "${descripcion}". 
-    Basado en esto, estima el porcentaje de avance (0-100). 
-    Responde SOLO con el número o "NO" si no se puede determinar.`;
+  const prompt = `El usuario está leyendo "${libro}" y dijo: "${descripcion}".
+    ¿Contiene información clara sobre el progreso (ej. capítulo, página, evento)? 
+    Responde SOLO con un  número (0-100) segun el porcentaje de avance o "NO".`;
   
   const respuesta = await safeAsk(prompt);
   

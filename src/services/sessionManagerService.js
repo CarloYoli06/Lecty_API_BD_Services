@@ -4,7 +4,7 @@ const progressEstimationService = require('./progressEstimationService');
 const { safeAsk } = require('./geminiWrapper');
 const User = require('../models/User');
 const Session = require('../models/Session');
-
+const fieldValidationService = require('./fieldValidationService');
 // En sessionManagerService.js
 async function saveMessage(session, contenido, emisor = 'ia', emocion = null) {
   // Verificar si el mensaje ya existe (compara contenido, emisor y tiempo)
@@ -50,7 +50,7 @@ module.exports = {
     // Manejar según etapa actual
     switch (session.ETAPA_ACTUAL) {
   case 'saludo':
-    return await module.exports._handleGreeting(user, session);
+    return await module.exports._handleGreeting(user, session,message);
   case 'diagnostico':
     return await module.exports._handleDiagnostic(user, session, message);
   case 'exploracion':
@@ -64,35 +64,41 @@ module.exports = {
     }
   },
 
-_handleGreeting: async (user, session) => {
-  // Analizar emoción/motivación del último mensaje
+_handleGreeting: async (user, session, message) => {
   const params = session.PARAMETROS_ACTUALES;
   const context = session.MENSAJES.slice(-3).map(m => `${m.EMISOR}: ${m.CONTENIDO}`).join(' | ');
   let prompt;
 
-  if (params.emocion === 'baja' || params.motivacion === 'baja') {
-    // Saludo empático
+  // Si emoción o motivación están bajas, quedarse en bucle motivacional
+  if (params.emocion === 'baja' || params.emocion === 'negativa' || params.motivacion === 'baja') {
     prompt = `
       Eres un asistente de lectura para niños.
       El usuario se siente triste o desmotivado.
       Nombre: ${user.NOMBRE || 'niño'}, Edad: ${user.EDAD || 'X'}
       Contexto reciente: ${context}
+      Su último mensaje fue: "${message}"
       Da un saludo cálido y empático, reconociendo cómo se siente el usuario y motivándolo suavemente.
       No repitas literalmente los mensajes anteriores.
     `;
+    const saludo = await safeAsk(prompt);
+    await saveMessage(session, saludo, 'agente');
+    // NO avanzar de etapa, quedarse en saludo hasta que mejore el estado emocional/motivacional
+    return saludo;
   } else {
-    // Saludo normal
     prompt = `
       Eres un asistente de lectura para niños.
       Nombre: ${user.NOMBRE || 'niño'}, Edad: ${user.EDAD || 'X'}
-      Da un saludo cálido y motivador para iniciar la conversación.
+      Contexto reciente: ${context}
+      Su último mensaje fue: "${message}"
+      Da un saludo cálido, motivador y breve para iniciar la conversación.
+      No repitas literalmente los mensajes anteriores.
     `;
+    const saludo = await safeAsk(prompt);
+    await saveMessage(session, saludo, 'agente');
+    // Ahora sí avanza a diagnóstico
+    await stateService.updateStage(session, 'diagnostico',message);
+    return saludo;
   }
-
-  const saludo = await safeAsk(prompt);
-  await saveMessage(session, saludo, 'agente');
-  await stateService.updateStage(session, 'diagnostico');
-  return saludo;
 },
 
 
@@ -101,14 +107,8 @@ _handleGreeting: async (user, session) => {
     const context = session.MENSAJES.slice(-3).map(m => `${m.EMISOR}: ${m.CONTENIDO}`).join(' | ');
 
     // 1. Si emoción es negativa o motivación baja, PAUSAR diagnóstico
-    if (params.emocion === 'negativa' || params.motivacion === 'baja') {
-      let activityPrompt;
-      if (params.emocion === 'negativa') {
-        activityPrompt = activityService.getActivityPrompt(session);
-      } else {
-        activityPrompt = activityService.getActivityPrompt({ ...session, PARAMETROS_ACTUALES: { ...params, motivacion: 'baja' } });
-      }
-
+    if (params.emocion === 'negativa') {
+      const activityPrompt = activityService.getActivityPrompt(session);
       const prompt = `
         Eres un asistente de lectura para niños.
         Nombre: ${user.NOMBRE || 'niño'}, Edad: ${user.EDAD || 'X'}
@@ -125,57 +125,191 @@ _handleGreeting: async (user, session) => {
       return respuesta;
     }
 
-    // 2. Detección de libro
-    if (!session.LIBRO_ACTUAL && message) {
-      const bookPrompt = `El usuario (${user.EDAD} años) dijo: "${message}". ¿Menciona claramente un libro infantil conocido? Responde SOLO con el título exacto o "NO".`;
-      const bookResponse = await safeAsk(bookPrompt);
-      if (!bookResponse.includes("NO")) {
-        session.LIBRO_ACTUAL = bookResponse.trim();
-        // Guardar en historial si es nuevo libro
-        session.HISTORIAL_AVANCE.push({
-          libro: session.LIBRO_ACTUAL,
-          avanceAnterior: 0,
-          avanceActual: 0,
-          fecha: new Date()
-        });
+    // 2. Prioridad: datos personales
+    const missingFields = await stateService.getMissingFields(user, session);
+    if (missingFields.includes('NOMBRE')) {
+      const prompt = `
+        Contexto reciente: ${context}
+        El usuario aún no ha proporcionado su nombre.
+        Su último mensaje fue: "${message}"
+        Pregunta de forma cálida y natural cómo se llama, sin repetir literalmente los mensajes anteriores.
+      `;
+      const respuesta = await safeAsk(prompt);
+      await saveMessage(session, respuesta, 'agente');
+      return respuesta;
+    }
+    if (missingFields.includes('EDAD')) {
+      const prompt = `
+        Contexto reciente: ${context}
+        El usuario aún no ha proporcionado su edad.
+        Su último mensaje fue: "${message}"
+        Pregunta de forma empática y natural cuántos años tiene, sin repetir literalmente los mensajes anteriores.
+      `;
+      const respuesta = await safeAsk(prompt);
+      await saveMessage(session, respuesta, 'agente');
+      return respuesta;
+    }
+
+    // 3. Preguntar por el libro si no se tiene
+    if (!session.LIBRO_ACTUAL && !session._esperandoLibro) {
+      session._esperandoLibro = true;
+      await session.save();
+      const prompt = `
+        Contexto reciente: ${context}
+        El usuario ya proporcionó su nombre y edad.
+        Su último mensaje fue: "${message}"
+        Pregunta de forma natural y motivadora qué libro está leyendo actualmente, para poder conversar sobre él.
+        No repitas literalmente los mensajes anteriores.
+      `;
+      const respuesta = await safeAsk(prompt);
+      await saveMessage(session, respuesta, 'agente');
+      return respuesta;
+    }
+
+    // 4. Validar la respuesta del usuario como posible libro
+    if (!session.LIBRO_ACTUAL && session._esperandoLibro) {
+      const validation = await fieldValidationService.validateField({
+        campo: 'LIBRO_ACTUAL',
+        mensaje: message,
+        user,
+        session
+      });
+      if (validation.startsWith("SI:")) {
+        const libroDetectado = validation.split(":")[1]?.trim();
+        if (libroDetectado && libroDetectado.toLowerCase() !== 'no') {
+          session.LIBRO_ACTUAL = libroDetectado;
+          session._esperandoLibro = false;
+          session._libroSugerido = undefined;
+          await session.save();
+          const prompt = `
+            Contexto reciente: ${context}
+            El usuario ha indicado que está leyendo "${session.LIBRO_ACTUAL}".
+            Su último mensaje fue: "${message}"
+            Pregunta de forma natural y breve por el avance o la parte del libro en la que va, para conocer mejor su experiencia.
+            No repitas literalmente los mensajes anteriores.
+          `;
+          const respuesta = await safeAsk(prompt);
+          await saveMessage(session, respuesta, 'agente');
+          return respuesta;
+        }
+      }
+      // Si no se detectó un libro claro, intentar adivinar el libro a partir de la descripción
+      const guessPrompt = `
+        El usuario respondió: "${message}"
+        Según esta descripción, ¿a qué libro infantil conocido podría referirse?
+        Responde SOLO con el título exacto entre comillas si tienes una alta probabilidad, o "NO" si no puedes adivinar con certeza.
+      `;
+      const guess = await safeAsk(guessPrompt);
+      if (guess && guess.startsWith('"') && guess.endsWith('"')) {
+        const libroAdivinado = guess.replace(/"/g, '').trim();
+        // Preguntar al usuario si es ese libro
+        session._libroSugerido = libroAdivinado;
         await session.save();
+        const confirmPrompt = `
+          Contexto reciente: ${context}
+          El usuario describió el libro como: "${message}"
+          ¿Te refieres al libro "${libroAdivinado}"? Responde sí o no, por favor.
+          No repitas literalmente los mensajes anteriores.
+        `;
+        const respuesta = await safeAsk(confirmPrompt);
+        await saveMessage(session, respuesta, 'agente');
+        return respuesta;
+      } else {
+        // Si no se puede adivinar, repreguntar normalmente
+        const prompt = `
+          Contexto reciente: ${context}
+          El usuario intentó decir el libro pero no fue claro.
+          Su último mensaje fue: "${message}"
+          Pídele de forma amable y motivadora que especifique el título exacto del libro que está leyendo.
+          No repitas literalmente los mensajes anteriores.
+        `;
+        const respuesta = await safeAsk(prompt);
+        await saveMessage(session, respuesta, 'agente');
+        return respuesta; 
+      }
+    }
+    // 4b. Confirmar libro sugerido si existe
+    if (!session.LIBRO_ACTUAL && session._libroSugerido) {
+      // Si el usuario responde afirmativamente, asignar el libro sugerido
+      const confirmValidation = await fieldValidationService.validateField({
+        campo: 'CONFIRMACION_LIBRO',
+        mensaje: message,
+        user,
+        session
+      });
+      if (confirmValidation.toLowerCase().includes('si')) {
+        session.LIBRO_ACTUAL = session._libroSugerido;
+        session._libroSugerido = undefined;
+        session._esperandoLibro = false;
+        await session.save();
+        const prompt = `
+          Contexto reciente: ${context}
+          ¡Perfecto! Ahora sé que estás leyendo "${session.LIBRO_ACTUAL}".
+          Su último mensaje fue: "${message}"
+          Pregunta de forma natural y breve por el avance o la parte del libro en la que va, para conocer mejor su experiencia.
+          No repitas literalmente los mensajes anteriores.
+        `;
+        const respuesta = await safeAsk(prompt);
+        await saveMessage(session, respuesta, 'agente');
+        return respuesta;
+      } else {
+        // Si no, limpiar sugerencia y volver a preguntar
+        session._libroSugerido = undefined;
+        await session.save();
+        const prompt = `
+          Contexto reciente: ${context}
+          El usuario negó la sugerencia de libro.
+          Su último mensaje fue: "${message}"
+          Pídele de forma amable y motivadora que especifique el título exacto del libro que está leyendo.
+          No repitas literalmente los mensajes anteriores.
+        `;
+        const respuesta = await safeAsk(prompt);
+        await saveMessage(session, respuesta, 'agente');
+        return respuesta;
       }
     }
 
-    // 3. Detección de progreso
-    if (session.LIBRO_ACTUAL && !session.PROGRESO_LIBRO && message) {
+    // 5. Preguntar por el progreso si falta
+    if (!session.PROGRESO_LIBRO|| session.PROGRESO_LIBRO <= 0) {
       const progress = await progressEstimationService.estimateProgress({
         libro: session.LIBRO_ACTUAL,
         descripcion: message
       });
-      if (progress !== null) {
-        session.PROGRESO_LIBRO = progress;
-        session.HISTORIAL_AVANCE.push({
-          libro: session.LIBRO_ACTUAL,
-          avanceAnterior: 0,
-          avanceActual: progress,
-          fecha: new Date()
-        });
+      if (progress !== null && progress !== 0) {
+      session.PROGRESO_LIBRO = progress;
+      await session.save();
+      
+      // Si tenemos toda la información necesaria, avanzar directamente a exploración
+      const missingFields = await stateService.getMissingFields(user, session);
+      if (missingFields.length === 0) {
         await session.save();
+        await stateService.updateStage(session, 'exploracion', message); // Pasar el mensaje actual
+        const context = session.MENSAJES.slice(-3).map(m => `${m.EMISOR}: ${m.CONTENIDO}`).join(' | ');
+        const transitionPrompt = `Contexto: ${context}. Genera un mensaje para comenzar a explorar
+        de forma coherente "${session.LIBRO_ACTUAL}". No repitas literalmente los mensajes anteriores.
+        edad: ${user.EDAD || 'X'}, nombre: ${user.NOMBRE || 'niño'}`;
+        const transitionMessage = await safeAsk(transitionPrompt);
+        await saveMessage(session, transitionMessage, 'agente');
+        return transitionMessage;
+      }
+    } else {
+        const prompt = `
+          eres un asistente de lectura para niños.
+          Nombre: ${user.NOMBRE || 'niño'}, Edad: ${user.EDAD || 'X'}
+          Contexto reciente: ${context}
+          El usuario ya indicó el libro: "${session.LIBRO_ACTUAL}".
+          Su último mensaje fue: "${message}"
+          ultimos mensajes:${context}
+          Pregunta de forma natural y motivadora por el avance o la parte del libro en la que va.
+          No repitas literalmente los mensajes anteriores.se breve y natural.
+        `;
+        const respuesta = await safeAsk(prompt);
+        await saveMessage(session, respuesta, 'agente');
+        return respuesta;
       }
     }
 
-    // 4. Preguntar por campos faltantes
-    const missingFields = await stateService.getMissingFields(user, session);
-    if (missingFields.length > 0) {
-      const field = missingFields[0];
-      const promptMap = {
-        EDAD: `Nombre: ${user.NOMBRE || 'niño'}, Contexto: ${context}. Pregunta la edad del niño de forma natural y empática. Solo envía el mensaje, sin paréntesis ni comillas.`,
-        NOMBRE: `Edad: ${user.EDAD || 'X'}, Contexto: ${context}. Pregunta el nombre del niño de forma cálida y empática. Solo envía el mensaje, sin paréntesis ni comillas.`,
-        LIBRO_ACTUAL: `Nombre: ${user.NOMBRE || 'niño'}, Contexto: ${context}. Pregunta qué libro está leyendo el niño, de forma natural y empática. Solo envía el mensaje, sin paréntesis ni comillas.`,
-        PROGRESO_LIBRO: `Nombre: ${user.NOMBRE || 'niño'}, Contexto: ${context}. Pregunta por dónde va en "${session.LIBRO_ACTUAL}". Solo envía el mensaje, sin paréntesis ni comillas.`
-      };
-      const question = await safeAsk(promptMap[field]);
-      await saveMessage(session, question, 'agente');
-      return question;
-    }
-
-    // 5. Transición a exploración si ya tenemos toda la info
+    // 6. Transición a exploración si ya tenemos toda la info
     await stateService.updateStage(session, 'exploracion');
     const transitionPrompt = `Contexto: ${context}. Genera un mensaje para comenzar a explorar "${session.LIBRO_ACTUAL}". No repitas literalmente los mensajes anteriores.`;
     const transitionMessage = await safeAsk(transitionPrompt);

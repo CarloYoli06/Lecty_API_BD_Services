@@ -19,6 +19,8 @@ const sessionSchema = new mongoose.Schema({
   SESSION_ID: { type: String, required: true, unique: true },
   LIBRO_ACTUAL: String,
   PROGRESO_LIBRO: Number,
+  _esperandoLibro: { type: Boolean, default: false },
+  _libroSugerido: String,
   FECHA_INICIO: { type: Date, default: Date.now },
   FINALIZADA: { type: Boolean, default: false },
   MENSAJES: [messageSchema],

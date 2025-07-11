@@ -14,6 +14,8 @@ exports.createSession = async (req, res) => {
       ESTADO_ANIMO: "",
       LIBRO_ACTUAL: "",
       PROGRESO_LIBRO: 0,
+      _esperandoLibro:  false ,
+      _libroSugerido: "",
       EMOCION_GENERAL: "",
       ETAPA_ACTUAL: "saludo",
       OBJETIVO_SESION: "Fomentar el gusto por la lectura"
