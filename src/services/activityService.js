@@ -4,69 +4,68 @@ const { safeAsk } = require('./geminiWrapper');
 const User = require('../models/User');
 
 const ACTIVIDADES = {
-  // Actividades para mejorar la emoción
   emocion: [
     {
-      tipo: 'chiste',
-      prompt: (libro, progreso) => `Genera un chiste breve y apropiado para niños sobre "${libro}" o sus personajes.`
+      tipo: 'chiste_tematico',
+      prompt: (libro) => `Genera un chiste breve y apropiado para niños sobre un personaje o situación de "${libro}" (sin referencias personales).`
     },
     {
-      tipo: 'juego_rol',
-      prompt: (libro, progreso) => `Invita al niño a imaginar que es uno de los personajes de "${libro}" y pregúntale qué haría en una situación divertida.`
+      tipo: 'juego_rol_historico',
+      prompt: (libro) => `Pregunta: "Si fueras un personaje de '${libro}' en esta escena, ¿qué emoción crees que sentirías?" (sin pedir detalles personales).`
     },
     {
-      tipo: 'imaginacion',
-      prompt: (libro, progreso) => `Propón un ejercicio de imaginación creativo y divertido relacionado con "${libro}", adaptado al ${progreso}% de avance.`
+      tipo: 'imaginacion_creativa',
+      prompt: (libro) => `Propón imaginar un objeto mágico que podría existir en el mundo de "${libro}" (ej: "¿Qué poder tendría un amuleto en esta historia?").`
     },
     {
-      tipo: 'anecdota',
-      prompt: (libro) => `Cuenta una anécdota breve y positiva relacionada con "${libro}" que pueda hacer sonreír al niño.`
+      tipo: 'anecdota_historica',
+      prompt: (libro) => `Cuenta una curiosidad breve sobre el autor o cómo se escribió "${libro}" (ej: "¿Sabías que...?").`
     }
   ],
   motivacion: [
     {
-      tipo: 'reto',
-      prompt: (libro, progreso) => `Propón un pequeño reto divertido relacionado con "${libro}" para motivar al usuario a seguir leyendo.`
+      tipo: 'reto_no_personal',
+      prompt: (libro, progreso) => `Propón un reto como: "Intenta adivinar qué hará el protagonista en la próxima página de '${libro}'".`
     },
     {
       tipo: 'pregunta_intriga',
-      prompt: (libro, progreso) => `Haz una pregunta intrigante sobre lo que podría pasar después en "${libro}" (basado en el ${progreso}% de avance).`
+      prompt: (libro) => `Haz una pregunta neutra sobre la trama: "¿Qué crees que pasaría si [personaje] descubre el secreto de...?".`
     },
     {
-      tipo: 'premio_virtual',
-      prompt: (libro, progreso) => `Felicita al niño por su progreso en "${libro}" y ofrece una "medalla virtual" o reconocimiento especial por su esfuerzo.`
+      tipo: 'reconocimiento_logro',
+      prompt: (libro) => `Felicita por el progreso: "¡Llegaste al ${progreso}%! ¿Te ha gustado algo especial de esta parte?" (pregunta opcional).`
     },
     {
-      tipo: 'conexion_personal',
-      prompt: (libro, progreso) => `Haz una pregunta que conecte los eventos de "${libro}" con experiencias personales del niño para aumentar su interés.`
+      tipo: 'conexion_universal',
+      prompt: (libro) => `Pregunta neutra: "¿Qué emoción crees que sentiría cualquier niño en la escena de...?" (sin mencionar al usuario).`
     }
   ],
   comprension: [
     {
-      tipo: 'pregunta_comprension',
-      prompt: (libro, progreso) => `Haz una pregunta sencilla para verificar la comprensión de la parte reciente de "${libro}".`
+      tipo: 'pregunta_escena',
+      prompt: (libro) => `Pregunta sobre una escena concreta: "¿Qué decidió [personaje] cuando pasó...?"`
     },
     {
-      tipo: 'resumen',
-      prompt: (libro, progreso) => `Pide al usuario que resuma brevemente lo que ha leído recientemente en "${libro}".`
+      tipo: 'resumen_breve',
+      prompt: (libro) => `Pide resumir solo un elemento: "En una palabra, ¿cómo describirías el lugar donde ocurre esta parte?"`
     },
     {
-      tipo: 'prediccion',
-      prompt: (libro, progreso) => `Pide al niño que prediga qué podría pasar después en "${libro}" basado en lo que ha entendido hasta ahora.`
+      tipo: 'prediccion_objetiva',
+      prompt: (libro) => `Pide predecir basado en pistas: "Según lo que hizo [personaje], ¿qué crees que pasará después?"`
     },
     {
-      tipo: 'personajes',
-      prompt: (libro, progreso) => `Haz una pregunta sobre las características o acciones de los personajes en "${libro}" para evaluar la comprensión.`
+      tipo: 'analisis_personaje',
+      prompt: (libro) => `Pregunta sobre roles: "¿Por qué crees que [antagonista] actúa así?"`
     }
   ],
   general: [
     {
-      tipo: 'pregunta_exploracion',
-      prompt: (libro, progreso, historial) => `Haz una pregunta exploratoria (1 oración) sobre "${libro}" considerando que el usuario ya ha leído hasta el ${progreso}% y el historial previo: ${historial}.`
+      tipo: 'pregunta_abierta',
+      prompt: (libro) => `Haz una pregunta general sobre "${libro}": "¿Qué parte te ha sorprendido más hasta ahora?" (respuesta opcional).`
     },
     {
-      tipo: 'conexion_personal',
-      prompt: (libro) => `Pregunta (1 oración) cómo se relaciona la historia de "${libro}" con experiencias personales del usuario.`
+      tipo: 'comparacion_literaria',
+      prompt: (libro) => `Compara con otros libros: "Este momento de '${libro}' me recuerda a [otro libro infantil], ¿tú qué opinas?"`
     }
   ]
 };

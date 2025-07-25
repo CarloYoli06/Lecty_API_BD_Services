@@ -77,9 +77,18 @@ _handleGreeting: async (user, session, message) => {
       Nombre: ${user.NOMBRE || 'niño'}, Edad: ${user.EDAD || 'X'}
       Contexto reciente: ${context}
       Su último mensaje fue: "${message}"
+      Se breve sin saturar al usuario.
       Da un saludo cálido y empático, reconociendo cómo se siente el usuario y motivándolo suavemente.
       No repitas literalmente los mensajes anteriores.
     `;
+    const previousSession = await Session.findOne({
+    US_ID: user.US_ID, 
+    FINALIZADA: true,
+    SESSION_ID: { $ne: session.SESSION_ID } // Excluir la sesión actual
+  }).sort({ FECHA_CREACION: -1 }); 
+    if (previousSession) {
+  prompt += `\nLe puedes hacer un recuerdo de lo que se hablo antes:"${previousSession.LIBRO_ACTUAL}" (${previousSession.PROGRESO_LIBRO}%).`;
+}
     const saludo = await safeAsk(prompt);
     await saveMessage(session, saludo, 'agente');
     // NO avanzar de etapa, quedarse en saludo hasta que mejore el estado emocional/motivacional
