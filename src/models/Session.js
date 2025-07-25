@@ -29,6 +29,7 @@ const sessionSchema = new mongoose.Schema({
     enum: ['saludo', 'diagnostico', 'exploracion', 'actividad', 'cierre'],
     default: 'saludo'
   },
+  OBJETIVO_SESION: { type: String, default: "Fomentar el gusto por la lectura" },
   
   // Parameters tracking
   PARAMETROS_ACTUALES: {

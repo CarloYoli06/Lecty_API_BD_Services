@@ -84,7 +84,7 @@ async function selectBestActivity(session, user, activityType) {
     - Estado emocional: ${session.PARAMETROS_ACTUALES.emocion}
     - Nivel de motivación: ${session.PARAMETROS_ACTUALES.motivacion}
     - Nivel de comprensión: ${session.PARAMETROS_ACTUALES.comprension}
-    mantyen la  conversacion coherente y breve pero amigable, 
+    
     Últimos mensajes:
     ${session.MENSAJES.slice(-3).map(m => `${m.EMISOR}: ${m.CONTENIDO}`).join('\n')}
   `;
@@ -105,7 +105,7 @@ async function selectBestActivity(session, user, activityType) {
     2. El estado emocional y nivel de motivación actual
     3. El progreso en el libro y contexto reciente
     4. El objetivo de mejorar ${activityType}
-
+    5. La COMPRENSIÓN del niño sobre el libro
     Responde SOLO con el nombre exacto de la actividad más apropiada.
   `;
 

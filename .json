@@ -1,0 +1,273 @@
+{
+  "_id": {
+    "$oid": "68717b9dda3aabbff9edc0a7"
+  },
+  "US_ID": "USER2",
+  "SESSION_ID": "78f4bd95-cada-4291-8fa4-ccda61a15a99",
+  "LIBRO_ACTUAL": "Pinocho",
+  "PROGRESO_LIBRO": 75,
+  "_esperandoLibro": false,
+  "FECHA_INICIO": {
+    "$date": "2025-07-11T21:01:17.894Z"
+  },
+  "FINALIZADA": true,
+  "MENSAJES": [
+    {
+      "IDM": "42490c4f-2e64-4345-809b-f02eb9760379",
+      "CONTENIDO": "hola",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:21.808Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717ba1da3aabbff9edc0ab"
+      }
+    },
+    {
+      "IDM": "1752267683833_6hq8b",
+      "CONTENIDO": "¡Hola Juan! ¡Qué bueno verte de nuevo! ¿Listo para una nueva aventura en el mundo de los libros? ¡Tengo muchas ganas de leer contigo hoy!\n",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:23.833Z"
+      },
+      "EMOCION": "neutra",
+      "_id": {
+        "$oid": "68717ba3da3aabbff9edc0b2"
+      }
+    },
+    {
+      "IDM": "2444f006-86aa-4b92-82e5-388837ee7898",
+      "CONTENIDO": "claro vamos",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:30.191Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717baada3aabbff9edc0b9"
+      }
+    },
+    {
+      "IDM": "1752267692289_ui9ak",
+      "CONTENIDO": "¡Excelente! ¿Qué libro te tiene atrapado en este momento? ¡Cuéntame! Estoy ansioso por saber qué estás leyendo y compartir tus impresiones.\n",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:32.289Z"
+      },
+      "EMOCION": "positiva",
+      "_id": {
+        "$oid": "68717bacda3aabbff9edc0c4"
+      }
+    },
+    {
+      "IDM": "557b2f6b-d657-43d7-82e4-9434379eca7b",
+      "CONTENIDO": "pues es sobre un niño de madera",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:43.001Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717bb7da3aabbff9edc0cd"
+      }
+    },
+    {
+      "IDM": "1752267705682_csj6b",
+      "CONTENIDO": "¡Un niño de madera! Interesante. ¿Por qué parte de la historia vas?\n",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:45.682Z"
+      },
+      "EMOCION": "neutra",
+      "_id": {
+        "$oid": "68717bb9da3aabbff9edc0db"
+      }
+    },
+    {
+      "IDM": "c9913f1e-6358-45ea-8540-2459a9cf0e1e",
+      "CONTENIDO": "voy cuando se lo come la ballena",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:01:58.464Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717bc6da3aabbff9edc0e7"
+      }
+    },
+    {
+      "IDM": "1752267722659_b8svo",
+      "CONTENIDO": "¡Vaya, Juan! La ballena... ¡Qué momento tan crucial en la historia de Pinocho! ¿Te parece si hablamos un poco sobre cómo crees que se siente Pinocho en ese momento? ¿Qué esperas que pase después?\n",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:02:02.659Z"
+      },
+      "EMOCION": "neutra",
+      "_id": {
+        "$oid": "68717bcada3aabbff9edc0fb"
+      }
+    },
+    {
+      "IDM": "1457c61e-7604-4207-ab3d-285b721cef7d",
+      "CONTENIDO": "pues no sabria, capaz viene su padre a salvarlo",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:02:38.555Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717beeda3aabbff9edc10a"
+      }
+    },
+    {
+      "IDM": "1752267760565_nkm9l",
+      "CONTENIDO": "¡Eso suena a una gran idea, Juan! ¿Crees que Gepetto podría haber usado alguna herramienta o invento científico para encontrar a Pinocho dentro de la ballena, como un tipo de radar o sonar especial?\n",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:02:40.565Z"
+      },
+      "EMOCION": "neutra",
+      "_id": {
+        "$oid": "68717bf0da3aabbff9edc11d"
+      }
+    },
+    {
+      "IDM": "19a21806-4efd-4223-a16d-20c69f229c5e",
+      "CONTENIDO": "podria ser que lo saque magicamente si",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:03:01.302Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717c05da3aabbff9edc130"
+      }
+    },
+    {
+      "IDM": "1752267783973_yoojn",
+      "CONTENIDO": "¡Magia o ciencia, qué dilema! Ya que te gustan ambos, Juan, ¿qué truco de magia crees que Gepetto podría usar para hacer que la ballena estornude a Pinocho... o qué invento científico lo lograría más rápido?\n",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:03:03.973Z"
+      },
+      "EMOCION": "neutra",
+      "_id": {
+        "$oid": "68717c07da3aabbff9edc147"
+      }
+    },
+    {
+      "IDM": "a8d4f775-cdbf-4286-8e67-f65d073df7c2",
+      "CONTENIDO": "pues creo que podria hacer que le de alergia ala ballena",
+      "EMISOR": "usuario",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:03:59.701Z"
+      },
+      "EMOCION": "",
+      "_id": {
+        "$oid": "68717c3fda3aabbff9edc15d"
+      }
+    },
+    {
+      "IDM": "1752267843228_0ugv0",
+      "CONTENIDO": "¡Hola Juan! ¡Qué imaginación tienes! Me encantó escuchar tus ideas sobre cómo Gepetto podría rescatar a Pinocho de la ballena. La idea de la alergia es súper original. ¡Se nota que estás disfrutando mucho de la lectura!\n\nYa estás al 75% del libro, ¡eso es un gran avance! Sigue así, que ya falta poquito para saber cómo termina esta aventura. ¿Crees que Gepetto tendrá que usar la magia o la ciencia",
+      "EMISOR": "agente",
+      "FECHA_HORA": {
+        "$date": "2025-07-11T21:04:03.228Z"
+      },
+      "EMOCION": "neutra",
+      "_id": {
+        "$oid": "68717c43da3aabbff9edc176"
+      }
+    }
+  ],
+  "ETAPA_ACTUAL": "cierre",
+  "OBJETIVO_SESION": "Concluir la sesión de manera positiva y motivadora",
+  "PARAMETROS_ACTUALES": {
+    "comprension": "alta",
+    "emocion": "neutra",
+    "motivacion": "media"
+  },
+  "HISTORIAL_PARAMETROS": [
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:01:23.051Z"
+      },
+      "comprension": "alta",
+      "emocion": "neutra",
+      "motivacion": "media",
+      "_id": {
+        "$oid": "68717ba3da3aabbff9edc0b0"
+      }
+    },
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:01:31.205Z"
+      },
+      "comprension": "alta",
+      "emocion": "positiva",
+      "motivacion": "alta",
+      "_id": {
+        "$oid": "68717babda3aabbff9edc0c1"
+      }
+    },
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:01:44.003Z"
+      },
+      "comprension": "media",
+      "emocion": "neutra",
+      "motivacion": "media",
+      "_id": {
+        "$oid": "68717bb8da3aabbff9edc0d8"
+      }
+    },
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:01:59.640Z"
+      },
+      "comprension": "baja",
+      "emocion": "neutra",
+      "motivacion": "media",
+      "_id": {
+        "$oid": "68717bc7da3aabbff9edc0f5"
+      }
+    },
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:02:39.594Z"
+      },
+      "comprension": "alta",
+      "emocion": "neutra",
+      "motivacion": "media",
+      "_id": {
+        "$oid": "68717befda3aabbff9edc11b"
+      }
+    },
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:03:02.330Z"
+      },
+      "comprension": "alta",
+      "emocion": "neutra",
+      "motivacion": "media",
+      "_id": {
+        "$oid": "68717c06da3aabbff9edc144"
+      }
+    },
+    {
+      "fecha": {
+        "$date": "2025-07-11T21:04:00.691Z"
+      },
+      "comprension": "alta",
+      "emocion": "neutra",
+      "motivacion": "media",
+      "_id": {
+        "$oid": "68717c40da3aabbff9edc174"
+      }
+    }
+  ],
+  "HISTORIAL_AVANCE": [],
+  "__v": 21,
+  "RESUMEN_SESION": "Juan, leyendo \"Pinocho\" al 75%, está especulando sobre cómo Gepetto podría rescatar a Pinocho de la ballena, considerando tanto soluciones mágicas como científicas. La conversación se centra en la posibilidad de que Gepetto provoque una reacción alérgica en la ballena para que estornude a Pinocho, mostrando el entusiasmo de Juan por encontrar soluciones creativas al problema del libro.\n"
+}

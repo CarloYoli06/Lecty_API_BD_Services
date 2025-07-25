@@ -18,6 +18,7 @@ exports.createSession = async (req, res) => {
       _libroSugerido: "",
       EMOCION_GENERAL: "",
       ETAPA_ACTUAL: "saludo",
+      OBJETIVO_SESION:"",
       OBJETIVO_SESION: "Fomentar el gusto por la lectura"
     });
     console.log('createSession - session a guardar:', session); // LOG

@@ -381,10 +381,24 @@ _handleExploration: async (user, session, message) => {
   _handleActivity: async (user, session, message) => {
     const params = session.PARAMETROS_ACTUALES;
     const lastMessages = session.MENSAJES.slice(-3).map(m => `${m.EMISOR}: ${m.CONTENIDO}`).join('\n');
-    
-    // Obtener actividad personalizada
+// Obtener actividad personalizada
     const activityPrompt = await activityService.getActivityPrompt(session);
-    
+    const previousSession = await Session.findOne({
+      US_ID: session.US_ID,
+      LIBRO_ACTUAL: session.LIBRO_ACTUAL,
+      SESSION_ID: { $ne: session.SESSION_ID },
+      PROGRESO_LIBRO: { $gt: 0 }
+    }).sort({ FECHA_CREACION: -1 });
+    //contexto previo de sesion pasada
+    let previousSummary = '';
+    if (previousSession) {
+      previousSummary = `
+        Información de la sesión anterior:
+        - Progreso anterior: ${previousSession.PROGRESO_LIBRO}%
+        - Resumen anterior: ${previousSession.RESUMEN_SESION || 'Sin resumen'}
+        Puedes hacer referencia a lo que el usuario había leído antes, comparar avances o motivarlo usando su progreso anterior.
+      `;
+    }
     const promptContext = `
       Contexto del usuario:
       - Nombre: ${user.NOMBRE}, Edad: ${user.EDAD}
@@ -393,33 +407,31 @@ _handleExploration: async (user, session, message) => {
       - Estado emocional: ${params.emocion}
       - Nivel de motivación: ${params.motivacion}
       - Comprensión: ${params.comprension}
-      
+      ${previousSummary}
+
       Últimos mensajes:
       ${lastMessages}
-      
+
       Actividad sugerida:
       ${activityPrompt}
-      
+
       Genera una respuesta que:
       1. Introduzca la actividad de forma divertida y natural
       2. Sea apropiada para la edad del niño
       3. Conecte con sus intereses y estado emocional
-      4. Fomente la participación activa
-      
+      4. Si es posible, haz referencia a lo que el usuario había leído antes o a su progreso anterior
+      5. Fomente la participación activa
+
       La respuesta debe ser breve y entusiasta.
     `;
     
     const activityMessage = await safeAsk(promptContext);
     await saveMessage(session, activityMessage, 'agente');
-    
-    // Evaluar si es momento de pasar a cierre
-    if (await stateService.shouldTransitionToNextStage(session)) {
-      await stateService.updateStage(session, 'cierre');
-    } else {
-      // Si no, volver a exploración para mantener el engagement
-      await stateService.updateStage(session, 'exploracion');
+    // Evaluar transición usando el nextStage correcto
+    const transitionResult = await stateService.shouldTransitionToNextStage(session, message);
+    if (transitionResult.shouldTransition) {
+      await stateService.updateStage(session, transitionResult.nextStage, message);
     }
-    
     return activityMessage;
   },
 
@@ -460,13 +472,15 @@ _handleExploration: async (user, session, message) => {
       - Libro actual: "${session.LIBRO_ACTUAL}" (${session.PROGRESO_LIBRO}%)
       - Estado final: ${params.emocion}, ${params.motivacion}
       - Resumen: ${session.RESUMEN_SESION}
-      
+      - Contexto reciente: ${lastMessages}
       Genera un mensaje de cierre que:
+      Despidete finalizando todo pero sin perdder coherencia con la conversación
       1. Sea cálido y personal
       2. Reconozca el esfuerzo y progreso
       3. Deje una sensación positiva
       4. Motive a continuar leyendo
       5. Incluya una pequeña intriga o expectativa sobre lo que sigue
+      6. Sea breve (1-2 oraciones)
     `;
     
     const closingMessage = await safeAsk(closingPrompt);

@@ -1,7 +1,7 @@
 // stateService.js
 const Session = require('../models/Session');
 const { safeAsk } = require('./geminiWrapper');
-
+const User = require('../models/User');
 module.exports = {
   getCurrentStage: (session) => session.ETAPA_ACTUAL || 'saludo',
 
@@ -65,7 +65,6 @@ module.exports = {
     // Reglas específicas por etapa
     switch (currentStage) {
       case 'saludo':
-        // Pasar a diagnóstico después del primer intercambio
         return {
           shouldTransition: true,
           nextStage: 'diagnostico',
@@ -73,7 +72,6 @@ module.exports = {
         };
 
       case 'diagnostico':
-        // Verificar si tenemos toda la información necesaria
         const missingFields = await module.exports.getMissingFields(
           await User.findOne({ US_ID: session.US_ID }), 
           session
@@ -87,7 +85,6 @@ module.exports = {
         };
 
       case 'exploracion':
-        // Transicionar basado en comprensión y mensajes
         const altaComprension = params.comprension === 'alta';
         const suficientesMensajes = messageCount >= (altaComprension ? 5 : 8);
         
@@ -100,7 +97,6 @@ module.exports = {
         };
 
       case 'actividad':
-        // Evaluar si la actividad fue exitosa
         const actividadExitosa = params.motivacion === 'alta' || 
                                 params.emocion === 'positiva';
         
@@ -172,6 +168,14 @@ module.exports = {
   },
 
   analyzeMessage: async (message) => {
+    if (!message || message === 'undefined') {
+    return {
+      quiereContinuar: false,
+      quiereTerminar: false,
+      listoParaSiguienteEtapa: false,
+      razon: "Mensaje inválido recibido"
+    };
+  }
     const prompt = `Analiza el mensaje: "${message}". 
     Determina SOLO si hay señales claras en el texto. Si el mensaje es breve, ambiguo o no expresa emociones (por ejemplo: "hola", "ok", "sí"), responde "media" o "neutra" según corresponda.
 No asumas emociones negativas o motivación baja a menos que el mensaje lo indique explícitamente (por ejemplo: "estoy triste", "no quiero leer", "me aburro").:
@@ -190,8 +194,8 @@ No asumas emociones negativas o motivación baja a menos que el mensaje lo indiq
       return {
         comprension: result.comprension?.toLowerCase() || 'media',
         emocion: result.emocion?.toLowerCase() || 'neutra',
-        motivacion: result.motivacion?.toLowerCase() || 'media'
-      };
+        motivacion: (result.motivacion?.toLowerCase() === 'neutra' ? 'media' : result.motivacion?.toLowerCase()) || 'media'
+    };
     } catch (error) {
       console.error('Error analyzing message:', error);
       return {
