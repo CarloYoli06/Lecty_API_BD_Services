@@ -4,7 +4,21 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.createSession = async (req, res) => {
   try {
-    console.log('createSession - req.body:', req.body); // LOG
+     console.log('createSession - headers:', req.headers); // Log de headers
+    console.log('createSession - raw body:', req.body); // Log de body crudo
+
+    let userId;
+    if (req.body.US_ID) {
+      // Formato web (JSON directo)
+      userId = req.body.US_ID;
+    } else if (req.body.form) {
+      // Formato Unity (WWWForm)
+      userId = req.body.form.US_ID;
+    } else {
+      return res.status(400).json({ error: 'US_ID es requerido' });
+    }
+
+
     const session = new Session({
       ...req.body,
       SESSION_ID: uuidv4(),
@@ -28,12 +42,24 @@ exports.createSession = async (req, res) => {
     console.error('Error en createSession:', error); // LOG
     res.status(400).json({ message: error.message, stack: error.stack });
   }
-};
+};  
 
 exports.addMessageToConversation = async (req, res) => {
+  console.log('createSession - headers:', req.headers); // Log de headers
+  console.log('createSession - raw body:', req.body); // Log de body crudo
   try {
     const { userId, sessionId } = req.params;
-    const { content, sender, emotion } = req.body;
+
+ let content, sender, emotion;
+    if (req.body.content) {
+      // Formato web
+      ({ content, sender, emotion } = req.body);
+    } else if (req.body.form) {
+      // Formato Unity
+      content = req.body.form.content;
+      sender = req.body.form.sender || 'usuario';
+      emotion = req.body.form.emotion || '';
+    }
     console.log('addMessageToConversation - params:', req.params); // LOG
     console.log('addMessageToConversation - body:', req.body); // LOG
 
