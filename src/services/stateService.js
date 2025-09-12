@@ -65,6 +65,7 @@ module.exports = {
     // Reglas específicas por etapa
     switch (currentStage) {
       case 'saludo':
+        // Pasar a diagnóstico después del primer intercambio
         return {
           shouldTransition: true,
           nextStage: 'diagnostico',
@@ -72,6 +73,7 @@ module.exports = {
         };
 
       case 'diagnostico':
+        // Verificar si tenemos toda la información necesaria
         const missingFields = await module.exports.getMissingFields(
           await User.findOne({ US_ID: session.US_ID }), 
           session
@@ -85,6 +87,7 @@ module.exports = {
         };
 
       case 'exploracion':
+        // Transicionar basado en comprensión y mensajes
         const altaComprension = params.comprension === 'alta';
         const suficientesMensajes = messageCount >= (altaComprension ? 5 : 8);
         
@@ -97,6 +100,7 @@ module.exports = {
         };
 
       case 'actividad':
+        // Evaluar si la actividad fue exitosa
         const actividadExitosa = params.motivacion === 'alta' || 
                                 params.emocion === 'positiva';
         
@@ -248,7 +252,38 @@ No asumas emociones negativas o motivación baja a menos que el mensaje lo indiq
     return null;
   },
 
-  getActivityType: (session) => {
+   getActivityType: (session) => {
     return module.exports.getPriorityParameter(session) || 'general';
+  },
+
+  /**
+   * Analiza el mensaje del agente para determinar la animación correspondiente.
+   * @param {string} agentMessage - El texto de respuesta generado por el agente.
+   * @returns {Promise<string>} - Una cadena con la animación ('feliz', 'alegre', 'triste', 'enojado').
+   */
+  analyzeAgentAnimation: async (agentMessage) => {
+    const prompt = `Analiza la emoción en el siguiente mensaje: "${agentMessage}".
+    Responde únicamente con una de las siguientes palabras según la emoción principal que detectes:
+    - "Feliz" (para emociones positivas y de calma)
+    - "Baile" (para emociones de alta energía, entusiasmo o sorpresa positiva)
+    - "Triste" (para empatía, melancolía o desánimo)
+    - "Enojado" (para frustración o enfado)
+    Tu respuesta debe ser solo una de esas cuatro palabras.`;
+
+    try {
+      // Usamos 'feliz' como respuesta por defecto si Gemini falla.
+      const response = await safeAsk(prompt, 'feliz'); 
+      const animation = response.trim().toLowerCase();
+      const validAnimations = ['feliz', 'alegre', 'triste', 'enojado'];
+
+      // Validamos que la respuesta sea una de las animaciones permitidas.
+      if (validAnimations.includes(animation)) {
+        return animation;
+      }
+      return 'feliz'; // Retornamos 'feliz' si la respuesta no es válida.
+    } catch (error) {
+      console.error('Error analizando la animación del agente:', error);
+      return 'feliz'; // Animación por defecto en caso de error.
+    }
   }
 };

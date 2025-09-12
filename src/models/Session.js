@@ -52,7 +52,7 @@ const sessionSchema = new mongoose.Schema({
     fecha: { type: Date, default: Date.now }
   }],
   
-  RESUMEN_SESION: String,
+RESUMEN_SESION: { type: String, default: "" },
   ULTIMA_ACTIVIDAD: String
 });
 

@@ -4,69 +4,88 @@ const { safeAsk } = require('./geminiWrapper');
 const User = require('../models/User');
 
 const ACTIVIDADES = {
-  // Actividades para mejorar la emoción
+  // Actividades para mejorar la emoción y el disfrute
   emocion: [
     {
-      tipo: 'chiste',
-      prompt: (libro, progreso) => `Genera un chiste breve y apropiado para niños sobre "${libro}" o sus personajes.`
+      tipo: 'chiste_libro',
+      prompt: (libro, progreso) => `Genera un chiste breve y divertido sobre un personaje o una situación del libro "${libro}".`
     },
     {
       tipo: 'juego_rol',
-      prompt: (libro, progreso) => `Invita al niño a imaginar que es uno de los personajes de "${libro}" y pregúntale qué haría en una situación divertida.`
+      prompt: (libro, progreso) => `Imagina que eres el personaje principal de "${libro}". ¿Qué es lo más valiente o divertido que harías a continuación?`
     },
     {
-      tipo: 'imaginacion',
-      prompt: (libro, progreso) => `Propón un ejercicio de imaginación creativo y divertido relacionado con "${libro}", adaptado al ${progreso}% de avance.`
+      tipo: 'dato_curioso',
+      prompt: (libro, progreso) => `Busquemos un dato curioso relacionado con el tema principal de "${libro}". Por ejemplo, si es sobre piratas, ¡algo sobre barcos famosos!`
     },
     {
-      tipo: 'anecdota',
-      prompt: (libro) => `Cuenta una anécdota breve y positiva relacionada con "${libro}" que pueda hacer sonreír al niño.`
+      tipo: 'describe_personaje',
+      prompt: (libro, progreso) => `Si tuvieras que describir a tu personaje favorito de "${libro}" usando solo tres palabras divertidas, ¿cuáles serían?`
+    },
+    {
+      tipo: 'sonido_historia',
+      prompt: (libro, progreso) => `Si pudieras agregar un sonido a la última parte que leíste de "${libro}", ¿qué sonido sería y por qué?`
     }
   ],
+  // Actividades para mantener al niño enganchado con la historia
   motivacion: [
     {
-      tipo: 'reto',
-      prompt: (libro, progreso) => `Propón un pequeño reto divertido relacionado con "${libro}" para motivar al usuario a seguir leyendo.`
+      tipo: 'reto_lectura',
+      prompt: (libro, progreso) => `Te propongo un reto: en la próxima página que leas de "${libro}", encuentra una palabra que describa una emoción. ¿Cuál será?`
     },
     {
-      tipo: 'pregunta_intriga',
-      prompt: (libro, progreso) => `Haz una pregunta intrigante sobre lo que podría pasar después en "${libro}" (basado en el ${progreso}% de avance).`
+      tipo: 'pregunta_intrigante',
+      prompt: (libro, progreso) => `Basado en el ${progreso}% que has leído de "${libro}", ¿qué crees que es lo más inesperado que podría pasarle al protagonista?`
     },
     {
-      tipo: 'premio_virtual',
-      prompt: (libro, progreso) => `Felicita al niño por su progreso en "${libro}" y ofrece una "medalla virtual" o reconocimiento especial por su esfuerzo.`
+      tipo: 'medalla_virtual',
+      prompt: (libro, progreso) => `¡Felicidades por llegar al ${progreso}% de "${libro}"! Te has ganado la "Medalla del Lector Avanzado". ¡Sigue así!`
     },
     {
-      tipo: 'conexion_personal',
-      prompt: (libro, progreso) => `Haz una pregunta que conecte los eventos de "${libro}" con experiencias personales del niño para aumentar su interés.`
+      tipo: 'crea_titulo_alternativo',
+      prompt: (libro, progreso) => `Si tuvieras que ponerle un nuevo título a "${libro}" basado en lo que ha pasado hasta ahora, ¿cuál sería?`
+    },
+    {
+      tipo: 'secreto_personaje',
+      prompt: (libro, progreso) => `Imaginemos que un personaje de "${libro}" tiene un secreto. ¿Cuál podría ser el secreto más sorprendente?`
     }
   ],
+  // Actividades para reforzar lo que el niño ha entendido
   comprension: [
     {
-      tipo: 'pregunta_comprension',
-      prompt: (libro, progreso) => `Haz una pregunta sencilla para verificar la comprensión de la parte reciente de "${libro}".`
+      tipo: 'pregunta_clave',
+      prompt: (libro, progreso) => `Sobre lo último que leíste en "${libro}", ¿cuál fue la decisión más importante que tomó un personaje?`
     },
     {
-      tipo: 'resumen',
-      prompt: (libro, progreso) => `Pide al usuario que resuma brevemente lo que ha leído recientemente en "${libro}".`
+      tipo: 'resumen_emoji',
+      prompt: (libro, progreso) => `Resume la última parte que leíste de "${libro}" usando solo tres emojis. ¡A ver si adivino!`
     },
     {
-      tipo: 'prediccion',
-      prompt: (libro, progreso) => `Pide al niño que prediga qué podría pasar después en "${libro}" basado en lo que ha entendido hasta ahora.`
+      tipo: 'prediccion_logica',
+      prompt: (libro, progreso) => `Basado en las pistas del libro, ¿qué crees que pasará en el siguiente capítulo de "${libro}"?`
     },
     {
-      tipo: 'personajes',
-      prompt: (libro, progreso) => `Haz una pregunta sobre las características o acciones de los personajes en "${libro}" para evaluar la comprensión.`
+      tipo: 'dibuja_escena',
+      prompt: (libro, progreso) => `Describe con palabras la escena más emocionante o colorida que te imaginaste al leer "${libro}" para que yo también pueda verla.`
+    },
+    {
+        tipo: 'personajes_decision',
+        prompt: (libro, progreso) => `Si los personajes de "${libro}" pudieran pedir un deseo ahora mismo, ¿qué crees que pedirían?`
     }
   ],
+  // Actividades generales para conversar sobre la lectura
   general: [
     {
-      tipo: 'pregunta_exploracion',
-      prompt: (libro, progreso, historial) => `Haz una pregunta exploratoria (1 oración) sobre "${libro}" considerando que el usuario ya ha leído hasta el ${progreso}% y el historial previo: ${historial}.`
+      tipo: 'pregunta_exploratoria',
+      prompt: (libro, progreso, historial) => `Pensando en "${libro}" (leído al ${progreso}%), ¿qué es lo que más te ha sorprendido de la historia hasta ahora?`
     },
     {
-      tipo: 'conexion_personal',
-      prompt: (libro) => `Pregunta (1 oración) cómo se relaciona la historia de "${libro}" con experiencias personales del usuario.`
+      tipo: 'mensaje_libro',
+      prompt: (libro) => `¿Cuál crees que es la lección o el mensaje más importante que el libro "${libro}" nos intenta enseñar?`
+    },
+    {
+        tipo: 'palabra_magica',
+        prompt: (libro, progreso) => `De todo lo que has leído en "${libro}", ¿qué palabra te parece la más bonita o interesante y por qué?`
     }
   ]
 };
@@ -97,15 +116,14 @@ async function selectBestActivity(session, user, activityType) {
     Dado el siguiente contexto:
     ${context}
 
-    Y las siguientes actividades disponibles:
+    Y las siguientes actividades disponibles, enfocadas únicamente en el libro:
     ${activitiesDescription}
 
     Selecciona la actividad más apropiada considerando:
-    1. La edad y los intereses del niño
-    2. El estado emocional y nivel de motivación actual
-    3. El progreso en el libro y contexto reciente
-    4. El objetivo de mejorar ${activityType}
-    5. La COMPRENSIÓN del niño sobre el libro
+    1. La edad e intereses del niño.
+    2. El estado emocional y nivel de motivación actual.
+    3. El progreso en el libro y el contexto reciente.
+    4. El objetivo de mejorar ${activityType} sin hacer preguntas personales.
     Responde SOLO con el nombre exacto de la actividad más apropiada.
   `;
 
